@@ -92,7 +92,7 @@ void OUTPUTMANAGER::WindowResize()
 //
 // Initialize all state
 //
-DUPL_RETURN OUTPUTMANAGER::InitOutput(HWND Window, _Out_ RECT* DeskBounds)
+DUPL_RETURN OUTPUTMANAGER::InitOutput(HWND Window, _Inout_ RECT* DeskBounds, BOOL force=false)
 {
     HRESULT hr;
 
@@ -205,7 +205,7 @@ DUPL_RETURN OUTPUTMANAGER::InitOutput(HWND Window, _Out_ RECT* DeskBounds)
     }
 
     // Create shared texture
-    DUPL_RETURN Return = CreateSharedSurf(DeskBounds);
+    DUPL_RETURN Return = CreateSharedSurf(DeskBounds, force);
     if (Return != DUPL_RETURN_SUCCESS)
     {
         return Return;
@@ -282,7 +282,7 @@ DUPL_RETURN OUTPUTMANAGER::CreateAccessibleSurf(_In_ RECT* DeskBounds, _In_ DXGI
 //
 // Recreate shared texture
 //
-DUPL_RETURN OUTPUTMANAGER::CreateSharedSurf(_Out_ RECT* DeskBounds)
+DUPL_RETURN OUTPUTMANAGER::CreateSharedSurf(_Inout_ RECT* DeskBounds, BOOL force=false)
 {
     HRESULT hr;
 
@@ -302,40 +302,42 @@ DUPL_RETURN OUTPUTMANAGER::CreateSharedSurf(_Out_ RECT* DeskBounds)
 	{
 		return ProcessFailure(m_Device, L"Failed to get parent DXGI Adapter", L"Error", hr, SystemTransitionsExpectedErrors);
 	}
+	if (force == false) {
+		// Set initial values so that we always catch the right coordinates
+		DeskBounds->left = INT_MAX;
+		DeskBounds->right = INT_MIN;
+		DeskBounds->top = INT_MAX;
+		DeskBounds->bottom = INT_MIN;
 
-	// Set initial values so that we always catch the right coordinates
-	DeskBounds->left = INT_MAX;
-	DeskBounds->right = INT_MIN;
-	DeskBounds->top = INT_MAX;
-	DeskBounds->bottom = INT_MIN;
+		IDXGIOutput* DxgiOutput = nullptr;
 
-	IDXGIOutput* DxgiOutput = nullptr;
+		// Figure out right dimensions for full size desktop texture and # of outputs to duplicate
+		UINT OutputCount;
 
-	// Figure out right dimensions for full size desktop texture and # of outputs to duplicate
-	UINT OutputCount;
+		hr = S_OK;
+		if (force)
+			for (OutputCount = 0; SUCCEEDED(hr); ++OutputCount)
+			{
+				if (DxgiOutput)
+				{
+					DxgiOutput->Release();
+					DxgiOutput = nullptr;
+				}
+				hr = DxgiAdapter->EnumOutputs(OutputCount, &DxgiOutput);
+				if (DxgiOutput && (hr != DXGI_ERROR_NOT_FOUND))
+				{
+					DXGI_OUTPUT_DESC DesktopDesc;
+					DxgiOutput->GetDesc(&DesktopDesc);
 
-	hr = S_OK;
-	for (OutputCount = 0; SUCCEEDED(hr); ++OutputCount)
-	{
-		if (DxgiOutput)
-		{
-			DxgiOutput->Release();
-			DxgiOutput = nullptr;
-		}
-		hr = DxgiAdapter->EnumOutputs(OutputCount, &DxgiOutput);
-		if (DxgiOutput && (hr != DXGI_ERROR_NOT_FOUND))
-		{
-			DXGI_OUTPUT_DESC DesktopDesc;
-			DxgiOutput->GetDesc(&DesktopDesc);
-
-			DeskBounds->left = min(DesktopDesc.DesktopCoordinates.left, DeskBounds->left);
-			DeskBounds->top = min(DesktopDesc.DesktopCoordinates.top, DeskBounds->top);
-			DeskBounds->right = max(DesktopDesc.DesktopCoordinates.right, DeskBounds->right);
-			DeskBounds->bottom = max(DesktopDesc.DesktopCoordinates.bottom, DeskBounds->bottom);
-		}
+					DeskBounds->left = min(DesktopDesc.DesktopCoordinates.left, DeskBounds->left);
+					DeskBounds->top = min(DesktopDesc.DesktopCoordinates.top, DeskBounds->top);
+					DeskBounds->right = max(DesktopDesc.DesktopCoordinates.right, DeskBounds->right);
+					DeskBounds->bottom = max(DesktopDesc.DesktopCoordinates.bottom, DeskBounds->bottom);
+				}
+			}
+		--OutputCount;
 	}
-
-	--OutputCount;
+	
 
 	m_width = DeskBounds->right - DeskBounds->left;
 	m_height = DeskBounds->bottom - DeskBounds->top;

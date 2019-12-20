@@ -64,6 +64,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	bool Occluded = true;
 
 	MSG msg = { 0 };
+	NV12Frame *nv12Frame = NULL;
 
 	while (WM_QUIT != msg.message)
 	{
@@ -88,8 +89,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			// First time through the loop so nothing to clean up
 			FirstTime = false;
 
+			nv12Frame = ReadNV12FromFile();
 			// Re-initialize
-			Ret = OutMgr.InitOutput(hWnd, &DeskBounds);
+			DeskBounds.top = 0;
+			DeskBounds.left = 0;
+			DeskBounds.right = nv12Frame->pitch;
+			DeskBounds.bottom = nv12Frame->height;
+
+			Ret = OutMgr.InitOutput(hWnd, &DeskBounds, true);
+			
 
 			// We start off in occluded state and we should immediate get a occlusion status window message
 			Occluded = true;
@@ -99,15 +107,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			// Nothing else to do, so try to present to write out to window if not occluded
 			if (!Occluded)
 			{
-				NV12Frame *nv12Frame = ReadNV12FromFile();
+				if(nv12Frame == NULL)
+					nv12Frame = ReadNV12FromFile();
+
 				WriteNV12ToTexture(nv12Frame);
-				free(nv12Frame->Y);
-				free(nv12Frame->UV);
-				free(nv12Frame);
+				
 
 				Ret = OutMgr.UpdateApplicationWindow(&Occluded);
 			}
 		}
+	}
+
+	if (nv12Frame) {
+		free(nv12Frame->Y);
+		free(nv12Frame->UV);
+		free(nv12Frame);
 	}
 
 	if (msg.message == WM_QUIT)

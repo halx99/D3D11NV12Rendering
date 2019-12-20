@@ -23,7 +23,7 @@ class OUTPUTMANAGER
         OUTPUTMANAGER();
 		OUTPUTMANAGER(int width, int height);
         ~OUTPUTMANAGER();
-        DUPL_RETURN InitOutput(HWND Window, _Out_ RECT* DeskBounds);
+        DUPL_RETURN InitOutput(HWND Window, _Inout_ RECT* DeskBounds, BOOL force);
 		DUPL_RETURN CreateAccessibleSurf(RECT * DeskBounds, DXGI_FORMAT Format);
         DUPL_RETURN UpdateApplicationWindow(_Inout_ bool* Occluded);
         void CleanRefs();
@@ -48,7 +48,7 @@ class OUTPUTMANAGER
         DUPL_RETURN MakeRTV();
         void SetViewPort(UINT Width, UINT Height);
         DUPL_RETURN InitShaders();
-        DUPL_RETURN CreateSharedSurf(_Out_ RECT* DeskBounds);
+        DUPL_RETURN CreateSharedSurf(_Inout_ RECT* DeskBounds, BOOL force );
         DUPL_RETURN DrawFrame();
         DUPL_RETURN ResizeSwapChain();
 
