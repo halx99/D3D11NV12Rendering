@@ -4,6 +4,8 @@
 #include "D3D11NV12Rendering.h"
 #include "OutputManager.h"
 
+#include "media/MediaEngine.h"
+
 #define MAX_LOADSTRING 100
 char buf[1024];
 
@@ -34,7 +36,6 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 void WriteNV12ToTexture(NV12Frame *nv12Frame);
-NV12Frame* ReadNV12FromFile();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -57,14 +58,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
+	auto factory = ax::CreatePlatformMediaEngineFactory();
+	auto mediaEngine = factory->CreateMediaEngine();
+
+	mediaEngine->Open(R"(D:\dev\axmol\tests\cpp-tests\Content\hvc1_1912x1080.mp4)");
+
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_D3D11NV12RENDERING));
 
 	RECT DeskBounds;
-	bool FirstTime = true;
+	//bool FirstTime = true;
 	bool Occluded = true;
 
 	MSG msg = { 0 };
-	NV12Frame *nv12Frame = NULL;
+
+	unsigned int frameCount = 0;
 
 	while (WM_QUIT != msg.message)
 	{
@@ -83,46 +90,44 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 				DispatchMessage(&msg);
 			}
 		}
-		else if (FirstTime)
-		{
 
-			// First time through the loop so nothing to clean up
-			FirstTime = false;
+		mediaEngine->TransferVideoFrame([&](const ax::MEVideoFrame& frame) {
+			++frameCount;
+			if (frameCount == 1) {
+				OutputDebugStringA("First frame!\n");
 
-			nv12Frame = ReadNV12FromFile();
-			// Re-initialize
-			DeskBounds.top = 0;
-			DeskBounds.left = 0;
-			DeskBounds.right = nv12Frame->pitch;
-			DeskBounds.bottom = nv12Frame->height;
+				// Re-initialize
+				DeskBounds.top = 0;
+				DeskBounds.left = 0;
+				DeskBounds.right = frame._vpd._dim.x;
+				DeskBounds.bottom = frame._vpd._dim.y;
 
-			Ret = OutMgr.InitOutput(hWnd, &DeskBounds, true);
-			
+				Ret = OutMgr.InitOutput(hWnd, &DeskBounds, SIZE{ frame._videoDim.x, frame._videoDim.y }, true);
 
-			// We start off in occluded state and we should immediate get a occlusion status window message
-			Occluded = true;
-		}
-		else
-		{
-			// Nothing else to do, so try to present to write out to window if not occluded
-			if (!Occluded)
-			{
-				if(nv12Frame == NULL)
-					nv12Frame = ReadNV12FromFile();
 
-				WriteNV12ToTexture(nv12Frame);
-				
+				// We start off in occluded state and we should immediate get a occlusion status window message
+				Occluded = true;
+			}
+			else {
+				NV12Frame nv12Frame;
+				nv12Frame.pitch = frame._vpd._dim.x;
+				nv12Frame.height = frame._vpd._dim.y;
+				nv12Frame.Y = (BYTE*)frame._dataPointer;
+
+				auto YLen = nv12Frame.pitch * nv12Frame.height;
+				auto UVLen = nv12Frame.pitch / 2 * nv12Frame.height;
+				// verify
+				assert((YLen + UVLen) == frame._dataLen);
+				nv12Frame.UV = (BYTE*)(frame._dataPointer + YLen);
+
+				WriteNV12ToTexture(&nv12Frame);
 
 				Ret = OutMgr.UpdateApplicationWindow(&Occluded);
 			}
-		}
+			});
 	}
 
-	if (nv12Frame) {
-		free(nv12Frame->Y);
-		free(nv12Frame->UV);
-		free(nv12Frame);
-	}
+	factory->DestroyMediaEngine(mediaEngine);
 
 	if (msg.message == WM_QUIT)
 	{
@@ -133,8 +138,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     return (int) msg.wParam;
 }
-
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -240,30 +243,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
-}
-
-NV12Frame* ReadNV12FromFile()
-{
-
-	FILE *file = nullptr;
-	sprintf_s(buf, "content\\16.nv12");
-	fopen_s(&file, buf, "rb");
-
-	int size = sizeof(NV12Frame);
-	NV12Frame *nv12Frame = (NV12Frame*)malloc(size);
-	int readBytes = fread(nv12Frame, size, 1, file);
-
-	size = nv12Frame->pitch * nv12Frame->height;
-	nv12Frame->Y = (BYTE *)malloc(size);
-	readBytes = fread(nv12Frame->Y, size, 1, file);
-
-	size = nv12Frame->pitch * nv12Frame->height / 2;
-	nv12Frame->UV = (BYTE *)malloc(size);
-	readBytes = fread(nv12Frame->UV, size, 1, file);
-
-	fclose(file);
-
-	return nv12Frame;
 }
 
 void WriteNV12ToTexture(NV12Frame *nv12Frame)

@@ -23,7 +23,7 @@ class OUTPUTMANAGER
         OUTPUTMANAGER();
 		OUTPUTMANAGER(int width, int height);
         ~OUTPUTMANAGER();
-        DUPL_RETURN InitOutput(HWND Window, _Inout_ RECT* DeskBounds, BOOL force);
+        DUPL_RETURN InitOutput(HWND Window, _Inout_ RECT* DeskBounds, const SIZE& videoDim, BOOL force);
 		DUPL_RETURN CreateAccessibleSurf(RECT * DeskBounds, DXGI_FORMAT Format);
         DUPL_RETURN UpdateApplicationWindow(_Inout_ bool* Occluded);
         void CleanRefs();
@@ -42,6 +42,7 @@ class OUTPUTMANAGER
 		ID3D11ShaderResourceView* m_chrominanceView;
 		uint32_t m_width;
 		uint32_t m_height;
+        SIZE m_videoDim;
 
     private:
     // Methods
@@ -57,6 +58,7 @@ class OUTPUTMANAGER
         IDXGIFactory2* m_Factory;
         ID3D11RenderTargetView* m_RTV;
         ID3D11SamplerState* m_SamplerLinear;
+        ID3D11SamplerState* m_SamplerPoint; // GL_NEAREST
         ID3D11BlendState* m_BlendState;
         ID3D11VertexShader* m_VertexShader;
         ID3D11PixelShader* m_PixelShader;

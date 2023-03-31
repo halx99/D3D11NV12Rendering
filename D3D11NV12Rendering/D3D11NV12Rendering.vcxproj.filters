@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="axme">
+      <UniqueIdentifier>{807de912-1878-42f7-abbd-d29a77a9a0f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="axme\media">
+      <UniqueIdentifier>{440bf2d0-e494-4d29-b58d-d0efd1de4fc7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="axme\yasio">
+      <UniqueIdentifier>{09bbdd51-12d0-417b-8b46-b7994ee87767}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -33,6 +42,21 @@
     <ClInclude Include="OutputManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="axme\media\AvfMediaEngine.h">
+      <Filter>axme\media</Filter>
+    </ClInclude>
+    <ClInclude Include="axme\media\MediaEngine.h">
+      <Filter>axme\media</Filter>
+    </ClInclude>
+    <ClInclude Include="axme\media\MfMediaEngine.h">
+      <Filter>axme\media</Filter>
+    </ClInclude>
+    <ClInclude Include="axme\media\MFUtils.h">
+      <Filter>axme\media</Filter>
+    </ClInclude>
+    <ClInclude Include="axme\media\WmfMediaEngine.h">
+      <Filter>axme\media</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D11NV12Rendering.cpp">
@@ -40,6 +64,18 @@
     </ClCompile>
     <ClCompile Include="OutputManager.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="axme\media\MediaEngine.cpp">
+      <Filter>axme\media</Filter>
+    </ClCompile>
+    <ClCompile Include="axme\media\MfMediaEngine.cpp">
+      <Filter>axme\media</Filter>
+    </ClCompile>
+    <ClCompile Include="axme\media\MFUtils.cpp">
+      <Filter>axme\media</Filter>
+    </ClCompile>
+    <ClCompile Include="axme\media\WmfMediaEngine.cpp">
+      <Filter>axme\media</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -62,5 +98,15 @@
     <FxCompile Include="VertexShader.hlsl">
       <Filter>Source Files</Filter>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="axme\media\AvfMediaEngine.mm">
+      <Filter>axme\media</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="axme\yasio\yasio.natvis">
+      <Filter>axme\yasio</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

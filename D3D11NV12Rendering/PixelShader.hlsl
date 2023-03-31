@@ -13,7 +13,7 @@
 struct PixelShaderInput
 {
 	min16float4 pos         : SV_POSITION;
-	min16float2 texCoord    : TEXCOORD0;
+	float2 texCoord    : TEXCOORD0;
 };
 
 Texture2D<float>  luminanceChannel   : t0;

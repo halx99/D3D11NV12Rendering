@@ -1,0 +1,3 @@
+[submodule "D3D11NV12Rendering/axme"]
+	path = D3D11NV12Rendering/axme
+	url = https://github.com/halx99/axme.git

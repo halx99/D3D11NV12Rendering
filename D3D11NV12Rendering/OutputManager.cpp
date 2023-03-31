@@ -92,12 +92,14 @@ void OUTPUTMANAGER::WindowResize()
 //
 // Initialize all state
 //
-DUPL_RETURN OUTPUTMANAGER::InitOutput(HWND Window, _Inout_ RECT* DeskBounds, BOOL force=false)
+DUPL_RETURN OUTPUTMANAGER::InitOutput(HWND Window, _Inout_ RECT* DeskBounds, const SIZE& videoDim, BOOL force=false)
 {
     HRESULT hr;
 
     // Store window handle
     m_WindowHandle = Window;
+
+    m_videoDim = videoDim;
 
     // Driver types supported
     D3D_DRIVER_TYPE DriverTypes[] =
@@ -232,6 +234,18 @@ DUPL_RETURN OUTPUTMANAGER::InitOutput(HWND Window, _Inout_ RECT* DeskBounds, BOO
 	{
 		return ProcessFailure(m_Device, L"Failed to create sampler state in OUTPUTMANAGER", L"Error", hr, SystemTransitionsExpectedErrors);
 	}
+
+    D3D11_SAMPLER_DESC descNearest = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+    descNearest.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+
+    hr = m_Device->CreateSamplerState(
+        &descNearest,
+        &m_SamplerPoint
+    );
+    if (FAILED(hr))
+    {
+        return ProcessFailure(m_Device, L"Failed to create sampler state in OUTPUTMANAGER", L"Error", hr, SystemTransitionsExpectedErrors);
+    }
     
 
     // Initialize shaders
@@ -483,14 +497,18 @@ DUPL_RETURN OUTPUTMANAGER::DrawFrame()
     }
 
     // Vertices for drawing whole texture
+    // pos
+    // only sample valid textureRect with video dim
+    const float txMax = m_videoDim.cx / (float)m_width;
+    const float tyMax = m_videoDim.cy / (float)m_height;
     VERTEX Vertices[NUMVERTICES] =
     {
-        {XMFLOAT3(-1.0f, -1.0f, 0), XMFLOAT2(0.0f, 1.0f)},
+        {XMFLOAT3(-1.0f, -1.0f, 0), XMFLOAT2(0.0f, tyMax)},
         {XMFLOAT3(-1.0f, 1.0f, 0), XMFLOAT2(0.0f, 0.0f)},
-        {XMFLOAT3(1.0f, -1.0f, 0), XMFLOAT2(1.0f, 1.0f)},
-        {XMFLOAT3(1.0f, -1.0f, 0), XMFLOAT2(1.0f, 1.0f)},
+        {XMFLOAT3(1.0f, -1.0f, 0), XMFLOAT2(txMax, tyMax)},
+        {XMFLOAT3(1.0f, -1.0f, 0), XMFLOAT2(txMax, tyMax)},
         {XMFLOAT3(-1.0f, 1.0f, 0), XMFLOAT2(0.0f, 0.0f)},
-        {XMFLOAT3(1.0f, 1.0f, 0), XMFLOAT2(1.0f, 0.0f)},
+        {XMFLOAT3(1.0f, 1.0f, 0), XMFLOAT2(txMax, 0.0f)},
     };
 
 	
@@ -517,7 +535,8 @@ DUPL_RETURN OUTPUTMANAGER::DrawFrame()
     m_DeviceContext->VSSetShader(m_VertexShader, nullptr, 0);
     m_DeviceContext->PSSetShader(m_PixelShader, nullptr, 0);
     //m_DeviceContext->PSSetShaderResources(0, 1, &ShaderResource);
-    m_DeviceContext->PSSetSamplers(0, 1, &m_SamplerLinear);
+    m_DeviceContext->PSSetSamplers(0, 1, &m_SamplerPoint); // LumaTexture
+    m_DeviceContext->PSSetSamplers(1, 1, &m_SamplerLinear); // ChromaTexture
     m_DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     D3D11_BUFFER_DESC BufferDesc;
